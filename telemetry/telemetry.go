@@ -36,7 +36,7 @@ type OTelMetrics struct {
 // NewOTelMetrics creates metrics using the provided OpenTelemetry meter.
 func NewOTelMetrics(meter metric.Meter) (*OTelMetrics, error) {
 	if meter == nil {
-		meter = otel.Meter("gitlab.com/libs/go/postback")
+		meter = otel.Meter("github.com/shelik/postback")
 	}
 
 	successDuration, err := meter.Float64Histogram(

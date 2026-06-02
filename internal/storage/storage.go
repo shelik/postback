@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"gitlab.com/libs/go/postback/internal/domain"
+	"github.com/shelik/postback/internal/domain"
 )
 
 // Repository defines the storage contract used by workers and public wrappers.

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"gitlab.com/libs/go/postback/internal/domain"
+	"github.com/shelik/postback/internal/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

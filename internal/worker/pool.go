@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.com/libs/go/postback/internal/domain"
-	"gitlab.com/libs/go/postback/telemetry"
+	"github.com/shelik/postback/internal/domain"
+	"github.com/shelik/postback/telemetry"
 )
 
 // Repository defines the storage operations required by the worker pool.

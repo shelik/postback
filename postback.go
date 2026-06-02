@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"gitlab.com/libs/go/postback/internal/domain"
-	"gitlab.com/libs/go/postback/internal/storage"
+	"github.com/shelik/postback/internal/domain"
+	"github.com/shelik/postback/internal/storage"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

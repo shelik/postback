@@ -1,4 +1,4 @@
-module gitlab.com/libs/go/postback
+module github.com/shelik/postback
 
 go 1.22
 
