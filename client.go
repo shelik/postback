@@ -83,12 +83,12 @@ func New(repo Repository, cfg Config, opts ...Option) (*Client, error) {
 }
 
 // Enqueue schedules a postback for async delivery.
-func (c *Client) Enqueue(ctx context.Context, pb Postback) (int64, error) {
+func (c *Client) Enqueue(ctx context.Context, pb Postback) (string, error) {
 	if err := ctx.Err(); err != nil {
-		return 0, err
+		return "", err
 	}
 	if pb.URL == "" {
-		return 0, errors.New("url is required")
+		return "", errors.New("url is required")
 	}
 	if pb.Method == "" {
 		pb.Method = http.MethodPost

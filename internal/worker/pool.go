@@ -17,9 +17,9 @@ import (
 // Repository defines the storage operations required by the worker pool.
 type Repository interface {
 	Claim(ctx context.Context, now time.Time, limit int, owner string, ttl time.Duration) ([]domain.Postback, error)
-	MarkDelivered(ctx context.Context, id int64, deliveredAt time.Time) error
-	ScheduleRetry(ctx context.Context, id int64, attempts int, retryAt time.Time, lastErr string) error
-	MarkDead(ctx context.Context, id int64, attempts int, lastErr string) error
+	MarkDelivered(ctx context.Context, id string, deliveredAt time.Time) error
+	ScheduleRetry(ctx context.Context, id string, attempts int, retryAt time.Time, lastErr string) error
+	MarkDead(ctx context.Context, id string, attempts int, lastErr string) error
 }
 
 // Pool executes queued postbacks with retry semantics.
@@ -123,7 +123,7 @@ func (p *Pool) handlePostback(ctx context.Context, pb domain.Postback) {
 		p.metrics.ObserveDeliveryFailure(errText, time.Since(started))
 		if attempts >= p.cfg.MaxRetries {
 			if markErr := p.repo.MarkDead(ctx, pb.ID, attempts, errText); markErr != nil {
-				p.logger.Printf("postback: mark dead failed id=%d: %v", pb.ID, markErr)
+				p.logger.Printf("postback: mark dead failed id=%s: %v", pb.ID, markErr)
 			}
 			p.metrics.IncDead()
 			return
@@ -131,7 +131,7 @@ func (p *Pool) handlePostback(ctx context.Context, pb domain.Postback) {
 
 		retryAt := time.Now().UTC().Add(p.RetryDelayForAttempt(attempts))
 		if retryErr := p.repo.ScheduleRetry(ctx, pb.ID, attempts, retryAt, errText); retryErr != nil {
-			p.logger.Printf("postback: schedule retry failed id=%d: %v", pb.ID, retryErr)
+			p.logger.Printf("postback: schedule retry failed id=%s: %v", pb.ID, retryErr)
 		}
 		p.metrics.IncRetryScheduled()
 		return
@@ -139,7 +139,7 @@ func (p *Pool) handlePostback(ctx context.Context, pb domain.Postback) {
 
 	deliveredAt := time.Now().UTC()
 	if err := p.repo.MarkDelivered(ctx, pb.ID, deliveredAt); err != nil {
-		p.logger.Printf("postback: mark delivered failed id=%d: %v", pb.ID, err)
+		p.logger.Printf("postback: mark delivered failed id=%s: %v", pb.ID, err)
 		p.metrics.ObserveDeliveryFailure(err.Error(), time.Since(started))
 		return
 	}

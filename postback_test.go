@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -16,34 +17,34 @@ type fakeRepo struct {
 	queue           []Postback
 	enqueued        []Postback
 	nextID          int64
-	delivered       map[int64]bool
-	dead            map[int64]bool
-	retries         map[int64]int
-	lastRetryErr    map[int64]string
-	lastDeadErr     map[int64]string
-	lastRetryAt     map[int64]time.Time
+	delivered       map[string]bool
+	dead            map[string]bool
+	retries         map[string]int
+	lastRetryErr    map[string]string
+	lastDeadErr     map[string]string
+	lastRetryAt     map[string]time.Time
 	claimedAttempts int
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{
 		nextID:       1,
-		delivered:    map[int64]bool{},
-		dead:         map[int64]bool{},
-		retries:      map[int64]int{},
-		lastRetryErr: map[int64]string{},
-		lastDeadErr:  map[int64]string{},
-		lastRetryAt:  map[int64]time.Time{},
+		delivered:    map[string]bool{},
+		dead:         map[string]bool{},
+		retries:      map[string]int{},
+		lastRetryErr: map[string]string{},
+		lastDeadErr:  map[string]string{},
+		lastRetryAt:  map[string]time.Time{},
 	}
 }
 
-func (f *fakeRepo) Enqueue(ctx context.Context, pb Postback) (int64, error) {
+func (f *fakeRepo) Enqueue(ctx context.Context, pb Postback) (string, error) {
 	if err := ctx.Err(); err != nil {
-		return 0, err
+		return "", err
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	pb.ID = f.nextID
+	pb.ID = strconv.FormatInt(f.nextID, 10)
 	f.nextID++
 	f.enqueued = append(f.enqueued, pb)
 	f.queue = append(f.queue, pb)
@@ -69,14 +70,14 @@ func (f *fakeRepo) Claim(ctx context.Context, now time.Time, limit int, owner st
 	return out, nil
 }
 
-func (f *fakeRepo) MarkDelivered(ctx context.Context, id int64, deliveredAt time.Time) error {
+func (f *fakeRepo) MarkDelivered(ctx context.Context, id string, deliveredAt time.Time) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.delivered[id] = true
 	return nil
 }
 
-func (f *fakeRepo) ScheduleRetry(ctx context.Context, id int64, attempts int, retryAt time.Time, lastErr string) error {
+func (f *fakeRepo) ScheduleRetry(ctx context.Context, id string, attempts int, retryAt time.Time, lastErr string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.retries[id] = attempts
@@ -92,7 +93,7 @@ func (f *fakeRepo) ScheduleRetry(ctx context.Context, id int64, attempts int, re
 	return nil
 }
 
-func (f *fakeRepo) MarkDead(ctx context.Context, id int64, attempts int, lastErr string) error {
+func (f *fakeRepo) MarkDead(ctx context.Context, id string, attempts int, lastErr string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.dead[id] = true
@@ -158,9 +159,9 @@ func TestWorker_RetryThenDeadAfterMaxRetries(t *testing.T) {
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
 		repo.mu.Lock()
-		isDead := repo.dead[1]
-		attempts := repo.retries[1]
-		retryAt := repo.lastRetryAt[1]
+		isDead := repo.dead["1"]
+		attempts := repo.retries["1"]
+		retryAt := repo.lastRetryAt["1"]
 		repo.mu.Unlock()
 		if isDead && attempts == 2 && !retryAt.IsZero() {
 			cancel()

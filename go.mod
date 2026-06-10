@@ -3,6 +3,7 @@ module github.com/shelik/postback
 go 1.22
 
 require (
+	github.com/google/uuid v1.6.0
 	go.mongodb.org/mongo-driver v1.17.1
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0

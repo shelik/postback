@@ -30,7 +30,7 @@ postback/
 - Custom `http.Client` injection.
 - Canceled context checks before enqueue and delivery.
 - Optional metrics via the `telemetry` package with OpenTelemetry.
-- MongoDB storage with atomic claim and indexes.
+- MongoDB storage with UUID IDs, atomic claim, and indexes.
 
 ## Configuration
 

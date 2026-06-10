@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/shelik/postback/internal/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,7 +15,6 @@ import (
 // MongoRepository stores postbacks in MongoDB.
 type MongoRepository struct {
 	postbacks *mongo.Collection
-	counters  *mongo.Collection
 }
 
 func NewMongoRepository(db *mongo.Database) (*MongoRepository, error) {
@@ -23,7 +23,6 @@ func NewMongoRepository(db *mongo.Database) (*MongoRepository, error) {
 	}
 	return &MongoRepository{
 		postbacks: db.Collection("postbacks"),
-		counters:  db.Collection("postback_counters"),
 	}, nil
 }
 
@@ -41,15 +40,12 @@ func (r *MongoRepository) EnsureIndexes(ctx context.Context) error {
 	return err
 }
 
-func (r *MongoRepository) Enqueue(ctx context.Context, pb domain.Postback) (int64, error) {
+func (r *MongoRepository) Enqueue(ctx context.Context, pb domain.Postback) (string, error) {
 	if err := ctx.Err(); err != nil {
-		return 0, err
+		return "", err
 	}
 
-	id, err := r.nextID(ctx)
-	if err != nil {
-		return 0, err
-	}
+	id := uuid.NewString()
 
 	now := time.Now().UTC()
 	if pb.NextAttemptAt.IsZero() {
@@ -76,9 +72,9 @@ func (r *MongoRepository) Enqueue(ctx context.Context, pb domain.Postback) (int6
 		"delivered_at":    nil,
 	}
 
-	_, err = r.postbacks.InsertOne(ctx, doc)
+	_, err := r.postbacks.InsertOne(ctx, doc)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	return id, nil
@@ -132,7 +128,7 @@ func (r *MongoRepository) Claim(ctx context.Context, now time.Time, limit int, o
 	return result, nil
 }
 
-func (r *MongoRepository) MarkDelivered(ctx context.Context, id int64, deliveredAt time.Time) error {
+func (r *MongoRepository) MarkDelivered(ctx context.Context, id string, deliveredAt time.Time) error {
 	update := bson.M{
 		"$set": bson.M{
 			"status":       domain.StatusDelivered,
@@ -146,7 +142,7 @@ func (r *MongoRepository) MarkDelivered(ctx context.Context, id int64, delivered
 	return err
 }
 
-func (r *MongoRepository) ScheduleRetry(ctx context.Context, id int64, attempts int, retryAt time.Time, lastErr string) error {
+func (r *MongoRepository) ScheduleRetry(ctx context.Context, id string, attempts int, retryAt time.Time, lastErr string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"attempts":        attempts,
@@ -162,7 +158,7 @@ func (r *MongoRepository) ScheduleRetry(ctx context.Context, id int64, attempts 
 	return err
 }
 
-func (r *MongoRepository) MarkDead(ctx context.Context, id int64, attempts int, lastErr string) error {
+func (r *MongoRepository) MarkDead(ctx context.Context, id string, attempts int, lastErr string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"attempts":     attempts,
@@ -177,21 +173,8 @@ func (r *MongoRepository) MarkDead(ctx context.Context, id int64, attempts int, 
 	return err
 }
 
-func (r *MongoRepository) nextID(ctx context.Context) (int64, error) {
-	update := bson.M{"$inc": bson.M{"seq": 1}}
-	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
-
-	var res struct {
-		Seq int64 `bson:"seq"`
-	}
-	if err := r.counters.FindOneAndUpdate(ctx, bson.M{"_id": "postbacks"}, update, opts).Decode(&res); err != nil {
-		return 0, err
-	}
-	return res.Seq, nil
-}
-
 type postbackDoc struct {
-	ID            int64             `bson:"_id"`
+	ID            string            `bson:"_id"`
 	URL           string            `bson:"url"`
 	Method        string            `bson:"method"`
 	Headers       map[string]string `bson:"headers"`

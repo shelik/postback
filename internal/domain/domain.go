@@ -97,7 +97,7 @@ func (c Config) Validate() error {
 
 // Postback stores one delivery job.
 type Postback struct {
-	ID            int64
+	ID            string
 	URL           string
 	Method        string
 	Headers       map[string]string
