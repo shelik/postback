@@ -47,6 +47,14 @@ cfg := postback.Config{
     RequestTimeout:    5 * time.Second,
 }
 ```
+Or it could be injected in global env config like:
+
+```go
+type BasicConfig struct {
+    postback postback.Config
+}
+
+```
 
 ## Quick Start
 
@@ -72,8 +80,14 @@ if err != nil {
 }
 
 client, err := postback.New(
-    repo,
-    cfg,
+    "TestService",
+    WithConfig(Config{
+        RetryDelay:        50 * time.Millisecond,
+        BackoffMultiplier: 1,
+        MaxRetryDelay:     50 * time.Millisecond,
+        MaxRetries:        2,
+    }),
+    WithRepository(repo),
     postback.WithHTTPClient(&http.Client{Timeout: 3 * time.Second}),
     postback.WithMetrics(metrics),
 )

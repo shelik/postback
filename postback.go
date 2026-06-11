@@ -31,8 +31,8 @@ type MongoRepository struct {
 	impl *storage.MongoRepository
 }
 
-func NewMongoRepository(db *mongo.Database) (*MongoRepository, error) {
-	impl, err := storage.NewMongoRepository(db)
+func NewMongoRepository(postbacks *mongo.Collection) (*MongoRepository, error) {
+	impl, err := storage.NewMongoRepository(postbacks)
 	if err != nil {
 		return nil, err
 	}

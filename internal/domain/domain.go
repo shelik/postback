@@ -13,16 +13,16 @@ const (
 
 // Config controls worker behavior and retry policy.
 type Config struct {
-	Workers           int
-	MaxRetries        int
-	RetryDelay        time.Duration
-	BackoffMultiplier float64
-	MaxRetryDelay     time.Duration
-	PollInterval      time.Duration
-	ClaimBatchSize    int
-	ClaimTTL          time.Duration
-	RequestTimeout    time.Duration
-	ShutdownWaitTime  time.Duration
+	Workers           int           `env:"POSTBACK_WORKERS_COUNT"`
+	MaxRetries        int           `env:"POSTBACK_MAX_RETRIES"`
+	RetryDelay        time.Duration `env:"POSTBACK_RETRY_DELAY"`
+	BackoffMultiplier float64       `env:"POSTBACK_BACKOFF_MULTIPLIER"`
+	MaxRetryDelay     time.Duration `env:"POSTBACK_MAX_RETRY_DELAY"`
+	PollInterval      time.Duration `env:"POSTBACK_POLL_INTERVAL"`
+	ClaimBatchSize    int           `env:"POSTBACK_CLAIM_BATCH_SIZE"`
+	ClaimTTL          time.Duration `env:"POSTBACK_CLAIM_TTL"`
+	RequestTimeout    time.Duration `env:"POSTBACK_REQUEST_TIMEOUT"`
+	ShutdownWaitTime  time.Duration `env:"POSTBACK_SHUTDOWN_WAIT_TIME"`
 }
 
 func (c Config) WithDefaults() Config {
@@ -97,18 +97,19 @@ func (c Config) Validate() error {
 
 // Postback stores one delivery job.
 type Postback struct {
-	ID            string
-	URL           string
-	Method        string
-	Headers       map[string]string
-	Body          []byte
-	Status        string
-	Attempts      int
-	LastError     string
-	NextAttemptAt time.Time
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	DeliveredAt   *time.Time
+	ID                 string
+	URL                string
+	Method             string
+	Headers            map[string]string
+	Body               []byte
+	SuccessStatusCodes []int
+	Status             string
+	Attempts           int
+	LastError          string
+	NextAttemptAt      time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	DeliveredAt        *time.Time
 }
 
 type invalidConfigError struct {

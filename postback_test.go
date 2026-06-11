@@ -104,7 +104,11 @@ func (f *fakeRepo) MarkDead(ctx context.Context, id string, attempts int, lastEr
 
 func TestEnqueue_ContextCanceled(t *testing.T) {
 	repo := newFakeRepo()
-	svc, err := New(repo, Config{})
+	svc, err := New(
+		"TestService",
+		WithConfig(Config{}),
+		WithRepository(repo),
+	)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -125,15 +129,17 @@ func TestWorker_RetryThenDeadAfterMaxRetries(t *testing.T) {
 	defer ts.Close()
 
 	repo := newFakeRepo()
-	svc, err := New(repo, Config{
-		Workers:        1,
-		MaxRetries:     2,
-		RetryDelay:     10 * time.Millisecond,
-		PollInterval:   10 * time.Millisecond,
-		ClaimBatchSize: 1,
-		ClaimTTL:       time.Second,
-		RequestTimeout: time.Second,
-	})
+
+	svc, err := New(
+		"TestService",
+		WithConfig(Config{
+			RetryDelay:        50 * time.Millisecond,
+			BackoffMultiplier: 1,
+			MaxRetryDelay:     50 * time.Millisecond,
+			MaxRetries:        2,
+		}),
+		WithRepository(repo),
+	)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -177,11 +183,16 @@ func TestWorker_RetryThenDeadAfterMaxRetries(t *testing.T) {
 }
 
 func TestRetryDelayForAttempt_ExponentialAndCap(t *testing.T) {
-	svc, err := New(newFakeRepo(), Config{
-		RetryDelay:        100 * time.Millisecond,
-		BackoffMultiplier: 2,
-		MaxRetryDelay:     350 * time.Millisecond,
-	})
+	svc, err := New(
+
+		"TestService",
+		WithConfig(Config{
+			RetryDelay:        100 * time.Millisecond,
+			BackoffMultiplier: 2,
+			MaxRetryDelay:     350 * time.Millisecond,
+		}),
+		WithRepository(newFakeRepo()),
+	)
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}

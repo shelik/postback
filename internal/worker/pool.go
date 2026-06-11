@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 
@@ -184,7 +185,10 @@ func (p *Pool) send(ctx context.Context, pb domain.Postback) error {
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, resp.Body)
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if pb.SuccessStatusCodes == nil {
+		pb.SuccessStatusCodes = []int{200, 201, 202, 204}
+	}
+	if !slices.Contains(pb.SuccessStatusCodes, resp.StatusCode) {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 

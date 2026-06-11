@@ -17,12 +17,12 @@ type MongoRepository struct {
 	postbacks *mongo.Collection
 }
 
-func NewMongoRepository(db *mongo.Database) (*MongoRepository, error) {
-	if db == nil {
-		return nil, errors.New("db is required")
+func NewMongoRepository(postbacks *mongo.Collection) (*MongoRepository, error) {
+	if postbacks == nil {
+		return nil, errors.New("postbacks collection is required")
 	}
 	return &MongoRepository{
-		postbacks: db.Collection("postbacks"),
+		postbacks: postbacks,
 	}, nil
 }
 

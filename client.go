@@ -44,8 +44,26 @@ func WithMetrics(metrics telemetry.Metrics) Option {
 	}
 }
 
+func WithRepository(repo storage.Repository) Option {
+	return func(c *Client) {
+		if repo != nil {
+			c.repo = repo
+		}
+	}
+}
+
+func WithConfig(cfg domain.Config) Option {
+	return func(c *Client) {
+		cfg = cfg.WithDefaults()
+		if err := cfg.Validate(); err == nil {
+			c.cfg = cfg
+		}
+	}
+}
+
 // Client is the public entrypoint for scheduling and delivering postbacks.
 type Client struct {
+	name       string
 	repo       storage.Repository
 	cfg        domain.Config
 	httpClient *http.Client
@@ -55,18 +73,14 @@ type Client struct {
 }
 
 // New creates a new postback client.
-func New(repo Repository, cfg Config, opts ...Option) (*Client, error) {
-	if repo == nil {
-		return nil, errors.New("repository is required")
-	}
-
-	cfg = cfg.WithDefaults()
+func New(name string, opts ...Option) (*Client, error) {
+	cfg := domain.Config{}.WithDefaults()
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
 	client := &Client{
-		repo: repo,
+		name: name,
 		cfg:  cfg,
 		httpClient: &http.Client{
 			Timeout: cfg.RequestTimeout,
@@ -78,7 +92,11 @@ func New(repo Repository, cfg Config, opts ...Option) (*Client, error) {
 		opt(client)
 	}
 
-	client.pool = worker.NewPool(repo, cfg, client.httpClient, client.logger, client.metrics)
+	if client.repo == nil {
+		return nil, errors.New("repository is required")
+	}
+
+	client.pool = worker.NewPool(client.repo, client.cfg, client.httpClient, client.logger, client.metrics)
 	return client, nil
 }
 
